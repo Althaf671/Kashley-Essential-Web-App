@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
+  provider  String  @default("credentials") 
+  googleId  String? @unique
+
+  Wishlist Wishlist[]
+  Cart     Cart[]
+  Orders   Order[]
+}
+
+model Product {
+  id            Int         @id @default(autoincrement())
+  name          String      @db.VarChar(120)
+  description   String?
+  price         Decimal     @db.Decimal(10, 2)
+  currency      String      @default("$") @db.VarChar(3)
+  quantity      Int         @default(0)
+  active        Boolean     @default(true)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt() @map("updated_at")
+  categoryId    Int         @map("category_id")
+  category      Category    @relation(fields: [categoryId], references: [id])
+  subCategoryId Int         @map("subCategory_id")
+  subCategory   Subcategory @relation(fields: [subCategoryId], references: [id])
+  imgURL        String
+  sizes         String[]
+
+  Wishlist  Wishlist[]
+  Cart      Cart[]
+  OrderItem OrderItem[]
+
+  @@map("products")
+}
+
+model Wishlist {
+  id        String @id @default(uuid())
+  userId    String
+  productId Int
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([userId])
+  @@index([productId])
+}
+
+model Cart {
+  id        String @id @default(uuid())
+  userId    String
+  productId Int
+  quantity  Int    @default(1)
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([userId])
+  @@index([productId])
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  userId    String
+  total     Decimal  @db.Decimal(10, 2)
+  status    String   @default("On Package")
+  createdAt DateTime @default(now())
+
+  user  User        @relation(fields: [userId], references: [id])
+  items OrderItem[]
+}
+
+model OrderItem {
+  id        String @id @default(uuid())
+  orderId   String
+  productId Int
+  quantity  Int    @default(1)
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Category {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique @db.VarChar(30)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt() @map("updated_at")
+  product     Product[]
+  subCategory Subcategory[]
+
+  @@map("categories")
+}
+
+model Subcategory {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique @db.VarChar(30)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt() @map("updated_at")
+  categoryId Int       @map("category_id")
+  category   Category  @relation(fields: [categoryId], references: [id])
+  product    Product[]
+
+  @@map("subCategory")
+}
